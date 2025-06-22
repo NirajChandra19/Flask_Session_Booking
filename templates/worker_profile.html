@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Worker Profile</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+</head>
+<body>
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile-pic" style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; margin-bottom: 10px;">
+        {% if profile_image_url %}
+          <img src="{{ profile_image_url }}" alt="Profile Photo" style="width: 150px; height: 150px;">
+        {% else %}
+          <img src="{{ url_for('static', filename='default_profile.jpg') }}" alt="Default Profile Photo" style="width: 150px; height: 150px;">
+        {% endif %}
+      </div>
+
+      <form id="photoUploadForm" action="{{ url_for('update_profile_photo') }}" method="POST" enctype="multipart/form-data" style="text-align: center;">
+        <input type="file" id="profileImage" name="image" accept="image/*" style="display:none;" onchange="this.form.submit()" />
+        <label for="profileImage" style="cursor: pointer; color: #fff; background-color: #007bff; padding: 6px 12px; border-radius: 4px; font-size: 0.9em;">
+          {% if worker.image %}
+            Edit Photo
+          {% else %}
+            Upload Photo
+          {% endif %}
+        </label>
+      </form>
+
+      <h3>{{ worker.name }}</h3>
+      <ul class="nav">
+        <li><a href="/home">Home</a></li>
+        <li><a href="{{ url_for('worker_assigned_jobs_page') }}">Work</a></li>
+        <li><a href="/settings">Settings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="profile-content">
+      <h2>About</h2>
+      <form id="workerProfileForm" onsubmit="return false;">
+        <label for="name">Full Name:</label>
+        <div class="profile-text" id="nameText">{{ worker.name }}</div>
+        <input class="editable-input" type="text" id="name" name="name" style="display:none;" required />
+
+        <label for="contact">Phone:</label>
+        <div class="profile-text" id="contactText">{{ worker.contact }}</div>
+        <input class="editable-input" type="tel" id="contact" name="contact" style="display:none;" required />
+
+        <label for="departments">Departments(s):</label>
+        <div class="profile-text" id="departmentsText">
+          {% if departments_list %}
+            {{ departments_list | join(', ') }}
+          {% else %}
+            N/A
+          {% endif %}
+        </div>
+        <select class="editable-input" id="departments" name="departments" multiple style="display:none;" required>
+          {% for dept in departments %}
+            <option value="{{ dept }}" {% if dept in departments_list %}selected{% endif %}>{{ dept }}</option>
+          {% endfor %}
+        </select>
+
+        <label for="fee">Service Fee (INR):</label>
+        <div class="profile-text" id="feeText">{{ worker.fee }}</div>
+        <input class="editable-input" type="number" id="fee" name="fee" min="100" step="50" style="display:none;" required />
+
+        <!-- Availability Section -->
+        <label>Availability (From - To):</label>
+        <div class="profile-text" id="availabilityText">
+          {% if worker.available_from and worker.available_to %}
+            {{ worker.available_from }} to {{ worker.available_to }}
+          {% else %}
+            Not Available
+          {% endif %}
+        </div>
+        
+
+        <div class="editable-input" id="availabilityEdit" style="display:none;">
+          <div style="margin-bottom: 10px;">
+            <label for="available_from_time">From:</label><br/>
+            <input type="time" id="available_from_time" name="available_from_time" required />
+            <select id="available_from_ampm" name="available_from_ampm">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+          <div>
+            <label for="available_to_time">To:</label><br/>
+            <input type="time" id="available_to_time" name="available_to_time" required />
+            <select id="available_to_ampm" name="available_to_ampm">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="about">Short Description / Skills:</label>
+        <div class="profile-text" id="aboutText">{{ worker.about or 'N/A' }}</div>
+        <textarea class="editable-input" id="about" name="about" rows="4" placeholder="Tell users about your experience and skills..." style="display:none;"></textarea>
+
+        <div class="buttons" style="margin-top: 10px;">
+          <button type="button" id="editBtn">Edit Profile</button>
+          <button type="submit" id="saveBtn" style="display:none;">Save Changes</button>
+          <button type="button" id="cancelBtn" style="display:none;">Cancel</button>
+        </div>
+
+        <!-- Worker Availability Toggle -->
+        <div style="margin-top: 20px;">
+          <label for="statusToggle" style="margin-right: 10px; font-weight: bold;">Availability:</label>
+          <label class="switch">
+            <input type="checkbox" id="statusToggle" {% if worker.status == 'available' %}checked{% endif %}>
+            <span class="slider round"></span>
+          </label>
+          <span id="statusLabel">{{ worker.status }}</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/worker_profile.js') }}"></script>
+</body>
+</html>

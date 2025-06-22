@@ -1,0 +1,74 @@
+/* Profile picture container */
+.profile-pic {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 10px;
+  border: 3px solid #007bff;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+}
+
+/* Profile image inside container */
+.profile-pic img {
+  width: 100%;
+  height: 100%;
+  /* background-size: contain; */
+  /* object-fit: cover; */
+  /* object-position: center; */
+  /* display: block; */
+}
+
+/* Hide the file input */
+#profileImage {
+  display: none;
+}
+
+/* Sidebar alignment */
+.sidebar {
+  text-align: center;
+}
+
+/* Button container */
+.photo-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+/* Common button styles */
+.photo-buttons button,
+.photo-buttons label {
+  background-color: #007bff;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+/* Red color for Remove button */
+.photo-buttons .btn-danger {
+  background-color: #dc3545;
+}
+
+.photo-buttons .btn-danger:hover {
+  background-color: #a71d2a;
+}
+
+/* Hover for regular buttons */
+.photo-buttons button:hover {
+  background-color: #0056b3;
+}

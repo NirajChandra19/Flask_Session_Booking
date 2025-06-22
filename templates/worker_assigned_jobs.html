@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Worker Jobs</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bookings_history.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <h2 class="mt-4 mb-3 text-center">Assigned Jobs</h2>
+
+    <div id="alert-container" class="mb-3 text-center"></div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped align-middle" id="bookings-table">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Service</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>User Name</th>
+            <th>User Contact</th>
+            <th>Address</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="bookings-body">
+          <!-- JS will fill this -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/worker_asign_jobs.js') }}"></script>
+</body>
+</html>

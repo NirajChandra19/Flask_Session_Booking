@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login | Service Booking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login as {{ role.capitalize() if role else 'User/Worker' }}</h2>
+    
+    <form id="loginForm" data-role="{{ role }}">
+      <label for="email">Email:</label>
+      <input type="email" id="email" placeholder="✉️Email" required/>
+
+      <label for="password">Password:</label>
+      <input type="password" id="password" placeholder="🔑Password" required />
+      
+
+      <button type="submit">Login</button>
+
+      <p class="signup-link">
+        Don't have an account?
+        {% if role == 'worker' %}
+          <a href="{{ url_for('register_worker_page') }}">Sign up as Worker</a>
+        {% else %}
+          <a href="{{ url_for('register_user_page') }}">Sign up as User</a>
+        {% endif %}
+      </p>
+    </form>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>

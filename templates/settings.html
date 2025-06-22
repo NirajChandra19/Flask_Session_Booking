@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ 'Worker' if role == 'worker' else 'User' }} Settings</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+</head>
+<body>
+  <div class="settings-container">
+    <h2>{{ 'Worker' if role == 'worker' else 'User' }} Settings</h2>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Change Password -->
+    <form method="POST" action="/change-password" class="settings-form">
+      <h4>Change Password</h4>
+      <label>Old Password:</label>
+      <input type="password" name="old_password" required>
+
+      <label>New Password:</label>
+      <input type="password" name="new_password" required>
+
+      <button type="submit" class="btn">Change Password</button>
+    </form>
+
+    <hr>
+
+    <!-- Delete Account -->
+    <form method="POST" action="/delete-account" class="settings-form" onsubmit="return confirmDelete();">
+      <h4>Delete Account</h4>
+      <button type="submit" class="btn danger">Delete My Account</button>
+    </form>
+  </div>
+
+  <script>
+    function confirmDelete() {
+        return confirm("Are you sure you want to permanently delete your account?");
+    }
+  </script>
+</body>
+</html>

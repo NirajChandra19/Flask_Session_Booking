@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Profile</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
+</head>
+<body>
+  <div class="main-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="profile-pic" style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; margin-bottom: 10px;">
+        {% if profile_image_url %}
+          <img src="{{ profile_image_url }}" alt="Profile Photo" style="width: 150px; height: 150px;">
+        {% else %}
+          <img src="{{ url_for('static', filename='default_profile.jpg') }}" alt="Default Profile Photo" style="width: 150px; height: 150px;">
+        {% endif %}
+      </div>
+
+      <form id="photoUploadForm" action="{{ url_for('update_profile_photo') }}" method="POST" enctype="multipart/form-data" style="text-align: center;">
+        <input type="file" id="profileImage" name="image" accept="image/*" style="display:none;" onchange="this.form.submit()" />
+        <label for="profileImage" style="cursor: pointer; color: #fff; background-color: #007bff; padding: 6px 12px; border-radius: 4px; font-size: 0.9em;">
+          {% if user.image %}Edit Photo{% else %}Upload Photo{% endif %}
+        </label>
+      </form>
+
+      <h3>{{ user.name }}</h3>
+      <ul class="nav">
+        <li><a href="/user_home">Home</a></li>
+        <li><a href="{{ url_for('user_bookings') }}">Bookings</a></li>
+        <li><a href="/services">Services</a></li>
+        <li><a href="/settings">Settings</a></li>
+        <li><a href="/logout">Logout</a></li>
+      </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="profile-content">
+      <h2>About</h2>
+      <form id="userProfileForm" onsubmit="return false;">
+        <label for="name">Full Name:</label>
+        <div class="profile-text" id="nameText">{{ user.name }}</div>
+        <input class="editable-input" type="text" id="name" name="name" style="display:none;" required />
+
+        <label for="contact">Phone:</label>
+        <div class="profile-text" id="contactText">{{ user.contact }}</div>
+        <input class="editable-input" type="tel" id="contact" name="contact" style="display:none;" required />
+
+        <label for="address">Address:</label>
+        <div class="profile-text" id="addressText">{{ user.address or 'N/A' }}</div>
+        <textarea class="editable-input" id="address" name="address" rows="4" placeholder="Enter your address..." style="display:none;"></textarea>
+
+        <div class="buttons" style="margin-top: 10px;">
+          <button type="button" id="editBtn">Edit Profile</button>
+          <button type="submit" id="saveBtn" style="display:none;">Save Changes</button>
+          <button type="button" id="cancelBtn" style="display:none;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/user_profile.js') }}"></script>
+</body>
+</html>

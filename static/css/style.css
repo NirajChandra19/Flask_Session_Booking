@@ -1,0 +1,142 @@
+/* === Global styles (unchanged) === */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0 20px;
+}
+
+.card-img-top {
+  height: 220px;           /* Fixed height for consistency */
+  object-fit: cover;       /* Ensures image fills the space without distortion */
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+
+form {
+  background: #fff;
+  padding: 20px;
+  margin: 30px auto;
+  border-radius: 5px;
+  max-width: 400px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+label {
+  display: block;
+  margin-top: 15px;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+/* Card hover effect for any card */
+.card {
+  transition: all 0.3s ease;
+  max-width: 100%;
+  cursor: pointer;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+/* === Homepage scoped styles === */
+.homepage-wrapper {
+  background-color: #f7f9fc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.homepage-wrapper nav.navbar {
+  padding: 0.5rem 0;
+}
+
+.homepage-wrapper nav .navbar-brand {
+  font-size: 1.4rem;
+}
+
+.homepage-wrapper header {
+  background-color: #f8f9fa;
+}
+
+.homepage-wrapper header h1 {
+  font-weight: 700;
+  color: #222;
+}
+
+.homepage-wrapper header p.lead {
+  color: #555;
+}
+
+.homepage-wrapper section.bg-white {
+  background-color: #fff;
+}
+
+.feature-box {
+  color: #333;
+  transition: transform 0.3s ease;
+}
+
+.feature-box:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.feature-box h4 {
+  margin-top: 15px;
+  font-weight: 600;
+}
+
+.feature-box p {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+footer {
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .homepage-wrapper header h1 {
+    font-size: 2rem;
+  }
+
+  .homepage-wrapper .btn-lg {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .homepage-wrapper .btn {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .homepage-wrapper header h1 {
+    font-size: 1.5rem;
+  }
+
+  .homepage-wrapper .lead {
+    font-size: 1rem;
+  }
+
+  .homepage-wrapper .feature-box {
+    padding: 20px 10px;
+  }
+}

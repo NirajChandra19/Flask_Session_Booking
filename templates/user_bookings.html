@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Bookings</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bookings_history.css') }}" />
+</head>
+<body>
+  <div class="container">
+    <!-- Page Heading -->
+    <h2 class="mt-4 mb-3 text-center">My Bookings</h2>
+
+    <!-- Alert Message Area -->
+    <div id="alert-container" class="mb-3 text-center"></div>
+
+    <!-- Bookings Table -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-striped align-middle" id="bookings-table">
+        <thead class="table-dark">
+          <tr>
+            <th>#</th>
+            <th>Service</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Worker Name</th>
+            <th>Worker Contact No</th>
+            <th>Worker Fee</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="bookings-body">
+          <!-- Data will be dynamically injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Back to Home Button -->
+    <div class="text-center mt-4">
+      <a href="{{ url_for('home') }}" class="btn btn-secondary">Back to Home</a>
+    </div>
+  </div>
+
+  <!-- Booking JS -->
+  <script src="{{ url_for('static', filename='js/user_bookings.js') }}"></script>
+</body>
+</html>

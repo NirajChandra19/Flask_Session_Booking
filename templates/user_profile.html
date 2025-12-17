@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>User Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}" />
 </head>
 <body>
@@ -26,7 +27,7 @@
 
       <h3>{{ user.name }}</h3>
       <ul class="nav">
-        <li><a href="/user_home">Home</a></li>
+        <li><a href="/home">Home</a></li>
         <li><a href="{{ url_for('user_bookings') }}">Bookings</a></li>
         <li><a href="/services">Services</a></li>
         <li><a href="/settings">Settings</a></li>

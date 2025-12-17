@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 CORS(app, supports_credentials=True)
-app.secret_key = 'supersecretkey'
+app.secret_key = 'supersecretkey' 
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['WORKER_FOLDER'] = 'static/profile_photos/worker_photos'
 app.config['USER_FOLDER'] = 'static/profile_photos/user_photos'

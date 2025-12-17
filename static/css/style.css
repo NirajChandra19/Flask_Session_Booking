@@ -140,3 +140,45 @@ footer {
     padding: 20px 10px;
   }
 }
+
+/* === Mobile responsiveness (screens ≤ 768px) === */
+@media only screen and (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+
+  form {
+    padding: 15px;
+    margin: 20px auto;
+    max-width: 100%;
+  }
+
+  .card {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .homepage-wrapper, .dashboard-container, .profile-container {
+    flex-direction: column;
+    padding: 0 10px;
+  }
+
+  .card-img-top {
+    height: auto;
+    width: 100%;
+  }
+
+  input, select, button {
+    font-size: 16px;
+  }
+
+  nav, header, footer {
+    text-align: center;
+    padding: 10px;
+  }
+
+  .navbar-brand, .nav-link {
+    display: block;
+    margin-bottom: 10px;
+  }
+}

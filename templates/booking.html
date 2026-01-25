@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-<html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <title>Book a Service</title>
@@ -8,7 +6,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 </head>
-
 <body>
   <!-- Header -->
   <header class="p-3 bg-primary text-white border-bottom mb-4">
@@ -24,61 +21,107 @@
   <!-- Main Booking Form -->
   <main class="container">
     <form id="bookingForm" class="card p-4 shadow-sm" novalidate>
-      <!-- Department -->
-      <div class="mb-3">
-        <label for="department" class="form-label">Select Department:</label>
-        <select id="department" name="department" class="form-select" required aria-required="true">
-          <option value="" disabled selected>--Choose a department--</option>
-          {% for department in departments %}
-          <option value="{{ department.id }}">{{ department.name }}</option>
-          {% endfor %}
-        </select>
-        <div class="form-text">Choose the department relevant to your service.</div>
-      </div>
+      {% if selected_worker %}
+        <!-- LOCKED BOOKING -->
+        <div class="alert alert-info">
+          You have selected a specific worker.
+          The booking will be <strong>locked</strong> to this worker.
+        </div>
+
+        <!-- Department (read-only) -->
+        <div class="mb-3">
+          <label class="form-label">Department</label>
+
+          <!-- Visible -->
+          <input type="text"
+                class="form-control"
+                value="{{ selected_department_name }}"
+                readonly>
+
+          <!-- Hidden for JS & backend -->
+          <input type="hidden"
+                id="department"
+                name="department"
+                value="{{ selected_department_name }}">
+        </div>
+
+        <!-- Worker -->
+        <div class="mb-3">
+          <label class="form-label">Selected Worker</label>
+
+          <input type="text"
+                class="form-control"
+                value="{{ selected_worker.name }}"
+                readonly>
+
+          <input type="hidden"
+                id="worker_id"
+                value="{{ selected_worker.id }}">
+        </div>
+
+      {% else %}
+        <!-- EMERGENCY BOOKING -->
+        <div class="alert alert-warning">
+          <strong>Urgent booking:</strong>
+          A nearby available worker will be automatically assigned.
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Select Department</label>
+          <select id="department"
+                  class="form-select"
+                  required>
+            <option value="" disabled selected>
+              --Choose a department--
+            </option>
+            {% for d in departments %}
+              <option value="{{ d.name }}">{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
 
       <!-- Date -->
       <div class="mb-3">
         <label for="date" class="form-label">Select Date:</label>
-        <input type="date" id="date" name="date" class="form-control" required aria-required="true" />
-        <div class="form-text">Select your preferred date.</div>
+        <input type="date" id="date" class="form-control" required>
       </div>
 
-      <!-- Time Selection (12-hour format) -->
+      <!-- Time -->
       <div class="mb-3">
-        <label for="timeHour" class="form-label">Select Time:</label>
-        <div class="d-flex align-items-center">
-          <select id="timeHour" name="timeHour" class="form-select me-2" required style="width: 80px;">
+        <label class="form-label">Select Time:</label>
+        <div class="d-flex">
+          <select id="timeHour" class="form-select me-2" required>
             <option value="" disabled selected>Hour</option>
             {% for h in range(1,13) %}
-            <option value="{{ h }}">{{ "%02d"|format(h) }}</option>
+              <option value="{{ h }}">{{ "%02d"|format(h) }}</option>
             {% endfor %}
           </select>
-          <span>:</span>
-          <select id="timeMinute" name="timeMinute" class="form-select mx-2" required style="width: 80px;">
+
+          <select id="timeMinute" class="form-select me-2" required>
             <option value="" disabled selected>Min</option>
             {% for m in range(0,60) %}
-            <option value="{{ "%02d"|format(m) }}">{{ "%02d"|format(m) }}</option>
+              <option value="{{ "%02d"|format(m) }}">{{ "%02d"|format(m) }}</option>
             {% endfor %}
           </select>
-          <select id="timeAMPM" name="timeAMPM" class="form-select ms-2" required style="width: 90px;">
+
+          <select id="timeAMPM" class="form-select" required>
             <option value="" disabled selected>AM/PM</option>
             <option value="AM">AM</option>
             <option value="PM">PM</option>
           </select>
         </div>
-        <div class="form-text">Select your preferred time (12-hour format).</div>
       </div>
 
       <!-- Contact -->
       <div class="mb-3">
         <label for="contact" class="form-label">Contact Info:</label>
-        <input type="text" id="contact" name="contact" class="form-control" placeholder="Phone or Email" required />
-        <div class="form-text">Provide your contact details.</div>
+        <input type="text" id="contact" class="form-control" required>
       </div>
 
-      <!-- Submit Button -->
       <button type="submit" class="btn btn-primary">Book Now</button>
     </form>
+
   </main>
 
   <!-- Toast Container -->

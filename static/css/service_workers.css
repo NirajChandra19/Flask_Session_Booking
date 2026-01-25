@@ -1,0 +1,91 @@
+/* Small UI polish */
+    .worker-card {
+      min-width: 260px;
+      border-radius: 12px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .worker-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 10px 25px rgba(13, 110, 253, 0.25);
+    }
+
+    .worker-img {
+      width: 90px;
+      height: 90px;
+      object-fit: cover;
+      border: 3px solid #0d6efd;
+    }
+
+/* Top centered header like Available Services */
+.available-workers-header {
+  background: #ffffff;
+  padding: 20px 30px;
+  border-radius: 14px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  margin-top: 10px;
+}
+.available-workers-header h2 {
+  font-size: 2.4rem;
+}
+
+
+
+
+/* ===============================
+   Mobile View Adjustments
+   =============================== */
+@media (max-width: 576px) {
+
+  /* Page heading */
+  h2 {
+    font-size: 1.4rem;
+    text-align: center;
+  }
+
+  /* Container spacing */
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  /* Horizontal scroll cards */
+  .d-flex.gap-4 {
+    gap: 1rem !important;
+  }
+
+  /* Worker card */
+  .worker-card {
+    min-width: 220px;
+    border-radius: 10px;
+  }
+
+  /* Worker image */
+  .worker-img {
+    width: 70px;
+    height: 70px;
+    border-width: 2px;
+  }
+
+  /* Worker name */
+  .worker-card h5 {
+    font-size: 1rem;
+  }
+
+  /* Fee text */
+  .worker-card p.text-primary {
+    font-size: 0.95rem;
+  }
+
+  /* Bio text */
+  .worker-card p.small {
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+
+  /* Book button */
+  .worker-card .btn {
+    font-size: 0.8rem;
+    padding: 6px 20px;
+  }
+}

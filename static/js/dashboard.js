@@ -12,6 +12,46 @@ document.addEventListener('DOMContentLoaded', () => {
         navbarBrand.textContent = "Welcome to Our Service";
       }
 
+      // 🔁 Change hero title & subtitle for worker
+      if (data.loggedIn && data.role === 'worker') {
+        const heroTitle = document.querySelector('header h1');
+        const heroSubtitle = document.querySelector('header p');
+
+        if (heroTitle) {
+          heroTitle.textContent = 'Welcome to Your Work Hub';
+        }
+
+        if (heroSubtitle) {
+          heroSubtitle.textContent =
+            'All your job assignments, updates, and progress in one place.';
+        }
+      }
+
+
+      // 🔒 Hide services-related UI for worker
+      if (data.loggedIn && data.role === 'worker') {
+
+        // Hide Services navbar link
+        document.querySelectorAll('a[href="/services"]').forEach(link => {
+          link.closest('li')?.remove();
+        });
+
+        // Hide Explore Services button
+        document.querySelectorAll('a.btn.btn-primary').forEach(btn => {
+          if (btn.textContent.trim() === 'Explore Services') {
+            btn.remove();
+          }
+        });
+
+        // Hide Popular Services section
+        document.querySelectorAll('h2').forEach(h2 => {
+          if (h2.textContent.trim() === 'Popular Services') {
+            h2.closest('section')?.remove();
+          }
+        });
+      }
+
+
       // Create dropdown menu for logged-in user
       function createUserMenu(username, role) {
         const li = document.createElement('li');

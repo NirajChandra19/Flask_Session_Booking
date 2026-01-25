@@ -1,97 +1,105 @@
+// ================================
+// Utility: convert 12h → 24h
+// ================================
 function convertTo24Hour(hour12, minute, ampm) {
-  let hour24 = parseInt(hour12, 10);
+  let hour = parseInt(hour12, 10);
 
-  if (ampm === 'AM') {
-    if (hour24 === 12) hour24 = 0; // 12 AM = 00
-  } else if (ampm === 'PM') {
-    if (hour24 !== 12) hour24 += 12;
-  }
+  if (ampm === "AM" && hour === 12) hour = 0;
+  if (ampm === "PM" && hour !== 12) hour += 12;
 
-  const hourStr = hour24.toString().padStart(2, '0');
-  const minuteStr = minute.toString().padStart(2, '0');
-  return `${hourStr}:${minuteStr}`;
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 }
 
-document.getElementById('bookingForm').addEventListener('submit', async function (event) {
-  event.preventDefault();
+// ================================
+// DOM Ready
+// ================================
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("bookingForm");
 
-  const department = document.getElementById('department').value;
-  const date = document.getElementById('date').value;
-  const hour12 = document.getElementById('timeHour').value;
-  const minute = document.getElementById('timeMinute').value;
-  const ampm = document.getElementById('timeAMPM').value;
-  const contact = document.getElementById('contact').value.trim();
-
-  if (!department || !date || !hour12 || !minute || !ampm || !contact) {
-    showToast("Please fill in all required fields.", "warning");
+  if (!form) {
+    console.error("bookingForm not found");
     return;
   }
 
-  const time = convertTo24Hour(hour12, minute, ampm);
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
 
-  try {
-    const response = await fetch('/book', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ department, date, time, contact }),
-    });
+    try {
+      const departmentEl = document.getElementById("department");
+      const department = departmentEl ? departmentEl.value : "";
 
-    const data = await response.json();
+      const date = document.getElementById("date")?.value;
+      const hour12 = document.getElementById("timeHour")?.value;
+      const minute = document.getElementById("timeMinute")?.value;
+      const ampm = document.getElementById("timeAMPM")?.value;
+      const contact = document.getElementById("contact")?.value.trim();
 
-    if (response.ok) {
-      showToast(data.message || "Booking successful!", "success");
-      this.reset();
-    } else {
-      showToast(data.error || "Failed to book service.", "danger");
-    }
-  } catch (error) {
-    console.error('Booking error:', error);
-    showToast("An unexpected error occurred. Please try again.", "danger");
-  }
-});
+      if (!department || !date || !hour12 || !minute || !ampm || !contact) {
+        showToast("Please fill in all required fields.", "warning");
+        return;
+      }
 
-document.addEventListener("DOMContentLoaded", function () {
-  fetch('/departments')
-    .then(response => response.json())
-    .then(data => {
-      const select = document.getElementById('department');
-      data.forEach(dept => {
-        const option = document.createElement('option');
-        option.value = dept.id;
-        option.textContent = dept.name;
-        select.appendChild(option);
+      const time = convertTo24Hour(hour12, minute, ampm);
+
+      const workerInput = document.getElementById("worker_id");
+      const worker_id = workerInput ? workerInput.value : null;
+
+      const response = await fetch("/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          department,
+          date,
+          time,
+          contact,
+          worker_id
+        })
       });
-    })
-    .catch(error => {
-      console.error('Error fetching departments:', error);
-    });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast(data.message || "Booking successful!", "success");
+        form.reset();
+      } else {
+        showToast(data.error || "Booking failed.", "danger");
+      }
+
+    } catch (err) {
+      console.error("Booking JS error:", err);
+      showToast("Something went wrong. Please try again.", "danger");
+    }
+  });
 });
 
-// Toast display
-function showToast(message, type = 'info') {
-  const toastContainer = document.getElementById('toast-container');
-  const toastId = `toast-${Date.now()}`;
+// ================================
+// Toast helper (Bootstrap)
+// ================================
+function showToast(message, type = "info") {
+  const container = document.getElementById("toast-container");
 
-  const toast = document.createElement('div');
+  // Fallback if container missing
+  if (!container || typeof bootstrap === "undefined") {
+    alert(message);
+    return;
+  }
+
+  const toast = document.createElement("div");
   toast.className = `toast align-items-center text-white bg-${type} border-0`;
-  toast.setAttribute('role', 'alert');
-  toast.setAttribute('aria-live', 'assertive');
-  toast.setAttribute('aria-atomic', 'true');
-  toast.setAttribute('id', toastId);
+  toast.setAttribute("role", "alert");
   toast.innerHTML = `
     <div class="d-flex">
       <div class="toast-body">${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      <button type="button"
+              class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"></button>
     </div>
   `;
 
-  toastContainer.appendChild(toast);
-
-  const bsToast = new bootstrap.Toast(toast, { delay: 5000 });
+  container.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
   bsToast.show();
 
-  toast.addEventListener('hidden.bs.toast', () => {
-    toast.remove(); // Remove toast from DOM when hidden
-  });
+  toast.addEventListener("hidden.bs.toast", () => toast.remove());
 }

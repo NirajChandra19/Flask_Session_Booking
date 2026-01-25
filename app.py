@@ -48,11 +48,54 @@ def register_user_page():
 def register_worker_page():
     return render_template("worker_signup.html")
 
-@app.route("/book-service-page", methods=["GET", "POST"])
+@app.route("/book-service-page")
 def book_service_page():
     if "user_id" not in session:
         return redirect("/login")
-    return render_template("booking.html")
+
+    selected_worker_id = request.args.get("worker_id")
+
+    cursor = db.cursor(dictionary=True)
+
+    selected_worker = None
+    selected_department_name = None
+    departments = []
+
+    if selected_worker_id:
+        # Fetch worker
+        cursor.execute(
+            "SELECT id, name FROM workers WHERE id = %s",
+            (selected_worker_id,)
+        )
+        selected_worker = cursor.fetchone()
+
+        # Fetch ONLY this worker's department
+        cursor.execute("""
+            SELECT d.name
+            FROM departments d
+            JOIN worker_departments wd ON d.id = wd.department_id
+            WHERE wd.worker_id = %s
+            LIMIT 1
+        """, (selected_worker_id,))
+        dept = cursor.fetchone()
+
+        if dept:
+            selected_department_name = dept["name"]
+
+    else:
+        # Emergency booking → show all departments
+        cursor.execute("SELECT name FROM departments")
+        departments = cursor.fetchall()
+
+    cursor.close()
+
+    return render_template(
+        "booking.html",
+        selected_worker=selected_worker,
+        selected_department_name=selected_department_name,
+        departments=departments
+    )
+
 
 @app.route('/worker-assigned-jobs-page')
 def worker_assigned_jobs_page():
@@ -164,97 +207,188 @@ def get_departments():
 
 from datetime import datetime, timedelta
 
+from datetime import datetime, time, timedelta
+
+def time_to_minutes(t):
+    if isinstance(t, timedelta):
+        return t.seconds // 60
+    if isinstance(t, time):
+        return t.hour * 60 + t.minute
+    return None
+
 @app.route('/book', methods=['POST'])
 def book_service():
     if 'user_id' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
     data = request.get_json()
-    department_id = data.get('department')
-    date_str = data.get('date')  # "YYYY-MM-DD"
-    time_str = data.get('time')  # "HH:MM"
-    contact = data.get('contact')
 
-    if not all([department_id, date_str, time_str, contact]):
+    department_name = data.get('department')
+    date_str = data.get('date')
+    time_str = data.get('time')
+    contact = data.get('contact')
+    selected_worker_id = data.get('worker_id')
+
+    if not all([department_name, date_str, time_str, contact]):
         return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        booking_datetime = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M")
+        booking_datetime = datetime.strptime(
+            f"{date_str} {time_str}", "%Y-%m-%d %H:%M"
+        )
     except ValueError:
         return jsonify({'error': 'Invalid date or time format'}), 400
+
+    booking_time = booking_datetime.time()
+    booking_minutes = time_to_minutes(booking_time)
 
     user_id = session['user_id']
     cursor = db.cursor(dictionary=True)
 
-    # Get department/service name
-    cursor.execute("SELECT name FROM departments WHERE id = %s", (department_id,))
+    # ------------------------------
+    # GET DEPARTMENT BY NAME
+    # ------------------------------
+    cursor.execute(
+        "SELECT id, name FROM departments WHERE name = %s",
+        (department_name,)
+    )
     dept = cursor.fetchone()
+
     if not dept:
         cursor.close()
         return jsonify({'error': 'Invalid department selected'}), 400
+
+    department_id = dept['id']
     service_name = dept['name']
 
-    # Step 1: Get available workers
-    cursor.execute("""
-        SELECT w.id FROM workers w
-        JOIN worker_departments wd ON w.id = wd.worker_id
-        WHERE wd.department_id = %s
-        AND %s BETWEEN w.available_from AND w.available_to
-        AND w.status = 'available'
-    """, (department_id, time_str))
-    potential_workers = cursor.fetchall()
-
-    if not potential_workers:
-        cursor.close()
-        return jsonify({'error': 'No workers are available'}), 400
-
-    # Step 2: Check for 1-hour conflict for each worker
-    available_worker_id = None
-    for worker in potential_workers:
-        worker_id = worker['id']
+    # ==================================================
+    # CASE 1: SELECTED (LOCKED) WORKER
+    # ==================================================
+    if selected_worker_id:
+        worker_id = int(selected_worker_id)
 
         cursor.execute("""
-            SELECT time FROM bookings 
+            SELECT available_from, available_to, status
+            FROM workers
+            WHERE id = %s
+        """, (worker_id,))
+        worker = cursor.fetchone()
+
+        if not worker or worker['status'] != 'available':
+            cursor.close()
+            return jsonify({'error': 'Selected worker not available'}), 400
+
+        from_minutes = time_to_minutes(worker['available_from'])
+        to_minutes = time_to_minutes(worker['available_to'])
+
+        if not (from_minutes <= booking_minutes <= to_minutes):
+            cursor.close()
+            return jsonify({'error': 'Worker not available at selected time'}), 400
+
+        cursor.execute("""
+            SELECT 1 FROM worker_departments
+            WHERE worker_id = %s AND department_id = %s
+        """, (worker_id, department_id))
+
+        if not cursor.fetchone():
+            cursor.close()
+            return jsonify({'error': 'Worker not in selected department'}), 400
+
+        cursor.execute("""
+            SELECT time FROM bookings
             WHERE worker_id = %s AND date = %s AND status = 'booked'
         """, (worker_id, date_str))
         bookings = cursor.fetchall()
 
-        conflict = False
         for b in bookings:
-            db_time = b['time']
             try:
-                existing_dt = datetime.strptime(f"{date_str} {str(db_time)}", "%Y-%m-%d %H:%M:%S")
+                existing_dt = datetime.strptime(
+                    f"{date_str} {b['time']}", "%Y-%m-%d %H:%M:%S"
+                )
             except ValueError:
-                try:
-                    existing_dt = datetime.strptime(f"{date_str} {str(db_time)}", "%Y-%m-%d %H:%M")
-                except ValueError:
-                    continue  # skip malformed time
+                existing_dt = datetime.strptime(
+                    f"{date_str} {b['time']}", "%Y-%m-%d %H:%M"
+                )
 
             if abs((existing_dt - booking_datetime).total_seconds()) < 3600:
-                conflict = True
+                cursor.close()
+                return jsonify({'error': 'Worker already booked near this time'}), 400
+
+        assigned_worker_id = worker_id
+
+    # ==================================================
+    # CASE 2: EMERGENCY BOOKING (AUTO ASSIGN)
+    # ==================================================
+    else:
+        cursor.execute("""
+            SELECT w.id, w.available_from, w.available_to
+            FROM workers w
+            JOIN worker_departments wd ON w.id = wd.worker_id
+            WHERE wd.department_id = %s
+            AND w.status = 'available'
+        """, (department_id,))
+        workers = cursor.fetchall()
+
+        assigned_worker_id = None
+
+        for w in workers:
+            from_m = time_to_minutes(w['available_from'])
+            to_m = time_to_minutes(w['available_to'])
+
+            if not (from_m <= booking_minutes <= to_m):
+                continue
+
+            cursor.execute("""
+                SELECT time FROM bookings
+                WHERE worker_id = %s AND date = %s AND status = 'booked'
+            """, (w['id'], date_str))
+            bookings = cursor.fetchall()
+
+            conflict = False
+            for b in bookings:
+                try:
+                    existing_dt = datetime.strptime(
+                        f"{date_str} {b['time']}", "%Y-%m-%d %H:%M:%S"
+                    )
+                except ValueError:
+                    existing_dt = datetime.strptime(
+                        f"{date_str} {b['time']}", "%Y-%m-%d %H:%M"
+                    )
+
+                if abs((existing_dt - booking_datetime).total_seconds()) < 3600:
+                    conflict = True
+                    break
+
+            if not conflict:
+                assigned_worker_id = w['id']
                 break
 
-        if not conflict:
-            available_worker_id = worker_id
-            break
+        if not assigned_worker_id:
+            cursor.close()
+            return jsonify({'error': 'All workers are busy'}), 400
 
-    if not available_worker_id:
-        cursor.close()
-        return jsonify({'error': 'All available workers are already booked within a 1-hour window. Please choose a different time.'}), 400
-
-    # Format time for DB as HH:MM
-    booking_time_str = booking_datetime.strftime("%H:%M")
-
-    # Insert the booking
+    # ------------------------------
+    # INSERT BOOKING
+    # ------------------------------
     cursor.execute("""
         INSERT INTO bookings (user_id, worker_id, service, date, time, contact, status)
         VALUES (%s, %s, %s, %s, %s, %s, 'booked')
-    """, (user_id, available_worker_id, service_name, date_str, booking_time_str, contact))
+    """, (
+        user_id,
+        assigned_worker_id,
+        service_name,
+        date_str,
+        booking_datetime.strftime("%H:%M"),
+        contact
+    ))
 
     db.commit()
     cursor.close()
 
-    return jsonify({'message': 'Booking successful! Worker assigned.'}), 200
+    return jsonify({
+        'message': 'Booking successful!',
+        'worker_id': assigned_worker_id
+    }), 200
 
 
 # user booking system
@@ -683,6 +817,46 @@ def check_session():
 def logout():
     session.clear()
     return redirect(url_for("home"))
+
+
+@app.route("/service/<department_name>")
+def service_workers(department_name):
+    if 'user_id' not in session:
+        return redirect(url_for("login_page"))
+
+    cursor = db.cursor(dictionary=True)
+
+    # Get department info by NAME
+    cursor.execute(
+        "SELECT id, name FROM departments WHERE name = %s",
+        (department_name,)
+    )
+    department = cursor.fetchone()
+
+    if not department:
+        cursor.close()
+        return "Department not found", 404
+
+    # Get available workers for this department (by NAME)
+    cursor.execute("""
+        SELECT w.*
+        FROM workers w
+        JOIN worker_departments wd ON w.id = wd.worker_id
+        JOIN departments d ON d.id = wd.department_id
+        WHERE d.name = %s
+        AND w.status = 'available'
+    """, (department_name,))
+
+    workers = cursor.fetchall()
+    cursor.close()
+
+    return render_template(
+        "service_workers.html",
+        department=department,
+        workers=workers
+    )
+
+
 
 # ---- RUN ----
 

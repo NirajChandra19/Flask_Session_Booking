@@ -12,5 +12,7 @@ static/profile_photos/*
 !static/profile_photos/user_photos/
 !static/profile_photos/worker_photos/
 !static/profile_photos/default_profile.jpg
+!static/profile_photos/user_photos/.gitkeep
+!static/profile_photos/worker_photos/.gitkeep
 
 scripts/

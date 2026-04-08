@@ -7,11 +7,14 @@ from datetime import datetime, time, timedelta
 import os
 import random
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
 CORS(app, supports_credentials=True)
-app.secret_key = 'supersecretkey' 
+app.secret_key = os.getenv("SECRET_KEY") 
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['WORKER_FOLDER'] = 'static/profile_photos/worker_photos'
 app.config['USER_FOLDER'] = 'static/profile_photos/user_photos'
@@ -22,10 +25,10 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Connect to MySQL
 db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="niraj19",
-    database="service_booking"
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    database=os.getenv("DB_NAMEs")
 )
 
 # ---- ROUTES ----

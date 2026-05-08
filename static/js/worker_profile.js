@@ -176,3 +176,50 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+
+// ⭐ Dynamic Stars
+function generateStars(rating){
+
+  let stars = '';
+
+  for(let i = 1; i <= 5; i++){
+
+    stars += i <= Math.round(rating)
+      ? '★'
+      : '☆';
+  }
+
+  return stars;
+}
+
+const rating =
+  parseFloat(
+    document.querySelector('.rating-text')
+      ?.textContent
+      ?.split('/')[0]
+  ) || 0;
+
+const starDisplay =
+  document.getElementById('starDisplay');
+
+if(starDisplay){
+  starDisplay.innerHTML =
+    generateStars(rating);
+}
+
+// Toggle Reviews
+function toggleReviews(){
+
+  const reviewsBox =
+    document.getElementById('reviewsBox');
+
+  if(reviewsBox.style.display === 'block'){
+
+    reviewsBox.style.display = 'none';
+
+  }else{
+
+    reviewsBox.style.display = 'block';
+  }
+}

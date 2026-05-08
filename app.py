@@ -7,9 +7,9 @@ from datetime import datetime, time, timedelta
 import os
 import random
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
-
-load_dotenv()
+from routes.payment_routes import payment_bp
+from routes.booking_routes import booking_bp
+from db import db
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -23,16 +23,7 @@ Session(app)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-# Connect to MySQL
-db = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAMEs")
-)
-
 # ---- ROUTES ----
-
 @app.route("/")
 @app.route("/home")
 def home():
@@ -50,54 +41,6 @@ def register_user_page():
 @app.route("/register-worker")
 def register_worker_page():
     return render_template("worker_signup.html")
-
-@app.route("/book-service-page")
-def book_service_page():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    selected_worker_id = request.args.get("worker_id")
-
-    cursor = db.cursor(dictionary=True)
-
-    selected_worker = None
-    selected_department_name = None
-    departments = []
-
-    if selected_worker_id:
-        # Fetch worker
-        cursor.execute(
-            "SELECT id, name FROM workers WHERE id = %s",
-            (selected_worker_id,)
-        )
-        selected_worker = cursor.fetchone()
-
-        # Fetch ONLY this worker's department
-        cursor.execute("""
-            SELECT d.name
-            FROM departments d
-            JOIN worker_departments wd ON d.id = wd.department_id
-            WHERE wd.worker_id = %s
-            LIMIT 1
-        """, (selected_worker_id,))
-        dept = cursor.fetchone()
-
-        if dept:
-            selected_department_name = dept["name"]
-
-    else:
-        # Emergency booking → show all departments
-        cursor.execute("SELECT name FROM departments")
-        departments = cursor.fetchall()
-
-    cursor.close()
-
-    return render_template(
-        "booking.html",
-        selected_worker=selected_worker,
-        selected_department_name=selected_department_name,
-        departments=departments
-    )
 
 
 @app.route('/worker-assigned-jobs-page')
@@ -198,8 +141,6 @@ def register():
     cursor.close()
     return jsonify({"error": "Invalid role"}), 400
 
-# ---- BOOKING ----
-
 @app.route('/departments')
 def get_departments():
     cursor = db.cursor(dictionary=True)
@@ -207,192 +148,6 @@ def get_departments():
     departments = cursor.fetchall()
     cursor.close()
     return jsonify(departments)
-
-from datetime import datetime, timedelta
-
-from datetime import datetime, time, timedelta
-
-def time_to_minutes(t):
-    if isinstance(t, timedelta):
-        return t.seconds // 60
-    if isinstance(t, time):
-        return t.hour * 60 + t.minute
-    return None
-
-@app.route('/book', methods=['POST'])
-def book_service():
-    if 'user_id' not in session:
-        return jsonify({'error': 'User not logged in'}), 401
-
-    data = request.get_json()
-
-    department_name = data.get('department')
-    date_str = data.get('date')
-    time_str = data.get('time')
-    contact = data.get('contact')
-    selected_worker_id = data.get('worker_id')
-
-    if not all([department_name, date_str, time_str, contact]):
-        return jsonify({'error': 'Missing required fields'}), 400
-
-    try:
-        booking_datetime = datetime.strptime(
-            f"{date_str} {time_str}", "%Y-%m-%d %H:%M"
-        )
-    except ValueError:
-        return jsonify({'error': 'Invalid date or time format'}), 400
-
-    booking_time = booking_datetime.time()
-    booking_minutes = time_to_minutes(booking_time)
-
-    user_id = session['user_id']
-    cursor = db.cursor(dictionary=True)
-
-    # ------------------------------
-    # GET DEPARTMENT BY NAME
-    # ------------------------------
-    cursor.execute(
-        "SELECT id, name FROM departments WHERE name = %s",
-        (department_name,)
-    )
-    dept = cursor.fetchone()
-
-    if not dept:
-        cursor.close()
-        return jsonify({'error': 'Invalid department selected'}), 400
-
-    department_id = dept['id']
-    service_name = dept['name']
-
-    # ==================================================
-    # CASE 1: SELECTED (LOCKED) WORKER
-    # ==================================================
-    if selected_worker_id:
-        worker_id = int(selected_worker_id)
-
-        cursor.execute("""
-            SELECT available_from, available_to, status
-            FROM workers
-            WHERE id = %s
-        """, (worker_id,))
-        worker = cursor.fetchone()
-
-        if not worker or worker['status'] != 'available':
-            cursor.close()
-            return jsonify({'error': 'Selected worker not available'}), 400
-
-        from_minutes = time_to_minutes(worker['available_from'])
-        to_minutes = time_to_minutes(worker['available_to'])
-
-        if not (from_minutes <= booking_minutes <= to_minutes):
-            cursor.close()
-            return jsonify({'error': 'Worker not available at selected time'}), 400
-
-        cursor.execute("""
-            SELECT 1 FROM worker_departments
-            WHERE worker_id = %s AND department_id = %s
-        """, (worker_id, department_id))
-
-        if not cursor.fetchone():
-            cursor.close()
-            return jsonify({'error': 'Worker not in selected department'}), 400
-
-        cursor.execute("""
-            SELECT time FROM bookings
-            WHERE worker_id = %s AND date = %s AND status = 'booked'
-        """, (worker_id, date_str))
-        bookings = cursor.fetchall()
-
-        for b in bookings:
-            try:
-                existing_dt = datetime.strptime(
-                    f"{date_str} {b['time']}", "%Y-%m-%d %H:%M:%S"
-                )
-            except ValueError:
-                existing_dt = datetime.strptime(
-                    f"{date_str} {b['time']}", "%Y-%m-%d %H:%M"
-                )
-
-            if abs((existing_dt - booking_datetime).total_seconds()) < 3600:
-                cursor.close()
-                return jsonify({'error': 'Worker already booked near this time'}), 400
-
-        assigned_worker_id = worker_id
-
-    # ==================================================
-    # CASE 2: EMERGENCY BOOKING (AUTO ASSIGN)
-    # ==================================================
-    else:
-        cursor.execute("""
-            SELECT w.id, w.available_from, w.available_to
-            FROM workers w
-            JOIN worker_departments wd ON w.id = wd.worker_id
-            WHERE wd.department_id = %s
-            AND w.status = 'available'
-        """, (department_id,))
-        workers = cursor.fetchall()
-
-        assigned_worker_id = None
-
-        for w in workers:
-            from_m = time_to_minutes(w['available_from'])
-            to_m = time_to_minutes(w['available_to'])
-
-            if not (from_m <= booking_minutes <= to_m):
-                continue
-
-            cursor.execute("""
-                SELECT time FROM bookings
-                WHERE worker_id = %s AND date = %s AND status = 'booked'
-            """, (w['id'], date_str))
-            bookings = cursor.fetchall()
-
-            conflict = False
-            for b in bookings:
-                try:
-                    existing_dt = datetime.strptime(
-                        f"{date_str} {b['time']}", "%Y-%m-%d %H:%M:%S"
-                    )
-                except ValueError:
-                    existing_dt = datetime.strptime(
-                        f"{date_str} {b['time']}", "%Y-%m-%d %H:%M"
-                    )
-
-                if abs((existing_dt - booking_datetime).total_seconds()) < 3600:
-                    conflict = True
-                    break
-
-            if not conflict:
-                assigned_worker_id = w['id']
-                break
-
-        if not assigned_worker_id:
-            cursor.close()
-            return jsonify({'error': 'All workers are busy'}), 400
-
-    # ------------------------------
-    # INSERT BOOKING
-    # ------------------------------
-    cursor.execute("""
-        INSERT INTO bookings (user_id, worker_id, service, date, time, contact, status)
-        VALUES (%s, %s, %s, %s, %s, %s, 'booked')
-    """, (
-        user_id,
-        assigned_worker_id,
-        service_name,
-        date_str,
-        booking_datetime.strftime("%H:%M"),
-        contact
-    ))
-
-    db.commit()
-    cursor.close()
-
-    return jsonify({
-        'message': 'Booking successful!',
-        'worker_id': assigned_worker_id
-    }), 200
-
 
 # user booking system
 @app.route('/get_user_bookings_by_department')
@@ -407,7 +162,8 @@ def get_user_bookings_by_department():
         cursor.execute("""
             SELECT 
                 b.id, 
-                b.service AS service_name,   -- Make sure 'service' column exists in bookings table
+                b.worker_id,
+                b.service AS service_name,
                 b.date, 
                 b.time, 
                 b.status,
@@ -417,6 +173,7 @@ def get_user_bookings_by_department():
             FROM bookings b
             LEFT JOIN workers w ON b.worker_id = w.id
             WHERE b.user_id = %s
+            AND b.status IN ('Confirmed')
             ORDER BY b.date DESC, b.time DESC
         """, (user_id,))
 
@@ -437,35 +194,200 @@ def get_user_bookings_by_department():
         cursor.close()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
-def cancel_booking(booking_id):
-    print(f"Cancel booking called with id={booking_id}")
-    # Simulate success
-    return jsonify({'success': True})
+@app.route('/complete_booking/<int:booking_id>', methods=['POST'])
+def complete_booking(booking_id):
 
-@app.route('/delete_booking/<int:booking_id>', methods=['POST'])
-def delete_booking(booking_id):
     if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        return jsonify({
+            'success': False,
+            'message': 'Unauthorized'
+        }), 401
 
     user_id = session['user_id']
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True)
     try:
-        # Verify booking exists and belongs to this user
-        cursor.execute("SELECT id FROM bookings WHERE id = %s AND user_id = %s", (booking_id, user_id))
-        booking = cursor.fetchone()
-        if not booking:
-            return jsonify({'success': False, 'message': 'Booking not found or not authorized'})
+        # Check booking belongs to user
+        cursor.execute("""
+            SELECT * FROM bookings
+            WHERE id=%s AND user_id=%s
+        """, (booking_id, user_id))
 
-        # Delete the booking
-        cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
+        booking = cursor.fetchone()
+
+        if not booking:
+            return jsonify({
+                'success': False,
+                'message': 'Booking not found'
+            })
+
+        # Update booking status
+        cursor.execute("""
+            UPDATE bookings
+            SET status='completed'
+            WHERE id=%s
+        """, (booking_id,))
+
+        # Make worker available again
+        cursor.execute("""
+            UPDATE workers
+            SET status='available'
+            WHERE id=%s
+        """, (booking['worker_id'],))
+
         db.commit()
         cursor.close()
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'worker_id': booking['worker_id']
+        })
     except Exception as e:
         db.rollback()
         cursor.close()
-        return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+        
+@app.route('/submit_review', methods=['POST'])
+def submit_review():
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'message': 'Login required'
+        }), 401
+        
+    user_id = session['user_id']
+    
+    data = request.get_json()
+    booking_id = data.get('booking_id')
+    worker_id = data.get('worker_id')
+    rating = data.get('rating')
+    review = data.get('review')
+    print(worker_id)
+
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        # CHECK IF REVIEW ALREADY EXISTS
+        cursor.execute("""
+            SELECT id
+            FROM reviews
+            WHERE booking_id = %s
+        """, (booking_id,))
+
+        existing_review = cursor.fetchone()
+        if existing_review:
+            cursor.close()
+            return jsonify({
+                'success': False,
+                'message': 'Review already submitted'
+            })
+        # INSERT REVIEW
+        cursor.execute("""
+            INSERT INTO reviews(
+                booking_id,
+                user_id,
+                worker_id,
+                rating,
+                review)
+            VALUES (%s, %s, %s, %s, %s)""",(
+            booking_id,
+            user_id,
+            worker_id,
+            rating,
+            review
+        ))
+
+        # UPDATE BOOKING STATUS
+        cursor.execute("""
+            UPDATE bookings
+            SET status = 'completed'
+            WHERE id = %s
+        """, (booking_id,))
+        
+        # MAKE WORKER AVAILABLE AGAIN
+        cursor.execute("""
+            UPDATE workers
+            SET status = 'available'
+            WHERE id = %s
+        """, (worker_id,))
+
+        db.commit()
+        cursor.close()
+
+        return jsonify({
+            'success': True
+        })
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/cancel_booking/<int:booking_id>', methods=['POST'])
+def cancel_booking(booking_id):
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'message': 'Unauthorized'
+        }), 401
+        
+    user_id = session['user_id']
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        # FIND BOOKING
+        cursor.execute("""
+            SELECT *
+            FROM bookings
+            WHERE id = %s
+            AND user_id = %s
+        """, (booking_id, user_id))
+
+        booking = cursor.fetchone()
+
+        if not booking:
+            cursor.close()
+            return jsonify({
+                'success': False,
+                'message': 'Booking not found'
+            })
+        # UPDATE WORKER STATUS
+        cursor.execute("""
+            UPDATE workers
+            SET status = 'available'
+            WHERE id = %s
+        """, (booking['worker_id'],))
+
+        # UPDATE BOOKING STATUS
+        cursor.execute("""
+            UPDATE bookings
+            SET status = 'cancelled'
+            WHERE id = %s
+        """, (booking_id,))
+        
+        db.commit()
+        # DELETE BOOKING FROM DB
+        cursor.execute("""
+            DELETE FROM bookings
+            WHERE id = %s
+        """, (booking_id,))
+        db.commit()
+        cursor.close()
+
+        return jsonify({
+            'success': True
+        })
+
+    except Exception as e:
+        db.rollback()
+        cursor.close()
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 @app.route('/get_worker_jobs')
 def get_worker_jobs():
@@ -588,16 +510,54 @@ def worker_profile():
 
     cursor.execute("SELECT * FROM workers WHERE id = %s", (worker_id,))
     worker = cursor.fetchone()
-    cursor.close()
 
     # Build image URL if image filename exists, else None
     profile_image_url = None
     if worker and worker.get('image'):
         profile_image_url = url_for('static', filename=f"profile_photos/worker_photos/{worker['image']}")
+    
+    cursor.execute("""
+        SELECT 
+            users.name AS user_name,
+            reviews.rating,
+            reviews.review,
+            reviews.created_at
+        FROM reviews
+        JOIN users
+            ON reviews.user_id = users.id
+        WHERE reviews.worker_id = %s
+        ORDER BY reviews.id DESC
+    """, (worker_id,))
 
+    reviews = cursor.fetchall()
+    
+    cursor.execute("""
+        SELECT 
+            ROUND(AVG(rating),1) AS average_rating,
+            COUNT(*) AS total_reviews
+        FROM reviews
+        WHERE worker_id = %s
+    """, (worker_id,))
+
+    rating_data = cursor.fetchone()
+
+    if worker:
+        worker['average_rating'] = (
+            rating_data['average_rating']
+            if rating_data['average_rating']
+            else 0
+        )
+        worker['total_reviews'] = (
+            rating_data['total_reviews']
+            if rating_data['total_reviews']
+            else 0
+        )
+    
+    cursor.close()
     return render_template(
         "worker_profile.html",
-        worker=worker, 
+        worker=worker,
+        reviews=reviews, 
         departments=departments, 
         departments_list=worker_departments,
         profile_image_url=profile_image_url
@@ -860,7 +820,8 @@ def service_workers(department_name):
     )
 
 
-
+app.register_blueprint(payment_bp)
+app.register_blueprint(booking_bp)
 # ---- RUN ----
 
 if __name__ == "__main__":

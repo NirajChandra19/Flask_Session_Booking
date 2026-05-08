@@ -43,6 +43,10 @@
                 id="department"
                 name="department"
                 value="{{ selected_department_name }}">
+          
+          <input type="hidden"
+                id="worker_fee"
+                value="{{ selected_worker.fee }}">
         </div>
 
         <!-- Worker -->
@@ -83,34 +87,32 @@
 
       <!-- Date -->
       <div class="mb-3">
-        <label for="date" class="form-label">Select Date:</label>
-        <input type="date" id="date" class="form-control" required>
+        <label for="date" class="form-label">
+          Select Date:
+        </label>
+        <input type="date"
+              id="date"
+              class="form-control"
+              required>
       </div>
 
       <!-- Time -->
       <div class="mb-3">
-        <label class="form-label">Select Time:</label>
-        <div class="d-flex">
-          <select id="timeHour" class="form-select me-2" required>
-            <option value="" disabled selected>Hour</option>
-            {% for h in range(1,13) %}
-              <option value="{{ h }}">{{ "%02d"|format(h) }}</option>
-            {% endfor %}
-          </select>
-
-          <select id="timeMinute" class="form-select me-2" required>
-            <option value="" disabled selected>Min</option>
-            {% for m in range(0,60) %}
-              <option value="{{ "%02d"|format(m) }}">{{ "%02d"|format(m) }}</option>
-            {% endfor %}
-          </select>
-
-          <select id="timeAMPM" class="form-select" required>
-            <option value="" disabled selected>AM/PM</option>
-            <option value="AM">AM</option>
-            <option value="PM">PM</option>
-          </select>
-        </div>
+        <label for="booking_time" class="form-label">
+          Select Time Slot:
+        </label>
+        <select id="booking_time"
+                class="form-select"
+                required>
+          <option value="" disabled selected>
+            -- Select Time --
+          </option>
+          {% for slot in slots %}
+            <option value="{{ slot }}">
+              {{ slot }}
+            </option>
+          {% endfor %}
+        </select>
       </div>
 
       <!-- Contact -->
@@ -131,6 +133,7 @@
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container" style="z-index: 1055;"></div>
 
   <!-- Scripts -->
+   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="{{ url_for('static', filename='js/booking.js') }}"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 </body>

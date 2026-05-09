@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const formattedDate = booking.date ? formatDate(booking.date) : 'N/A';
         const formattedTime = booking.time ? formatTime12h(booking.time) : 'N/A';
 
-        if (booking.status === 'booked') {
+        if (booking.status === 'Confirmed') {
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${index + 1}</td>
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>${booking.user_name || 'N/A'}</td>
             <td>${booking.user_contact || 'N/A'}</td>
             <td>${booking.user_address || 'N/A'}</td>
-            <td><span class="badge bg-success">booked</span></td>
+            <td><span class="badge bg-success">${booking.status || 'Confirmed'}</span></td>
           `;
           tbody.appendChild(row);
         }

@@ -405,7 +405,7 @@ def get_worker_jobs():
             b.contact AS user_contact
         FROM bookings b
         JOIN users u ON b.user_id = u.id
-        WHERE b.worker_id = %s AND b.status = 'booked'
+        WHERE b.worker_id = %s AND b.status = 'confirmed'
         ORDER BY b.date DESC, b.time DESC
     """, (worker_id,))
     

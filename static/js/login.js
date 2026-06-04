@@ -7,7 +7,9 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 
   // Get role from the URL query string
   const urlParams = new URLSearchParams(window.location.search);
-  const role = urlParams.get("role");
+  const role = document.querySelector(
+        'input[name="role"]:checked'
+    ).value;
 
   if (!role || (role !== "user" && role !== "worker")) {
     alert("Invalid or missing role in URL.");

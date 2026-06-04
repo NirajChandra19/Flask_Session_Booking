@@ -52,7 +52,7 @@ document.getElementById('workerForm').addEventListener('submit', async (e) => {
     alert(result.message || result.error);
 
     if (response.ok) {
-      window.location.href = '/login-page?role=worker';
+      window.location.href = '/home';
     }
   } catch (error) {
     console.error('Error during worker registration:', error);

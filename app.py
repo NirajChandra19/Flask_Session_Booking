@@ -112,15 +112,32 @@ def register():
 
     if role == "user":
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        
         if cursor.fetchone():
             cursor.close()
             return jsonify({"error": "User already exists"}), 409
 
         hashed = generate_password_hash(data["password"])
-        cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (data["name"], email, hashed))
+
+        cursor.execute("""
+            INSERT INTO users (name, email, password)
+            VALUES (%s, %s, %s)
+        """, (data["name"], email, hashed))
+
         db.commit()
+
+        new_id = cursor.lastrowid
+
+        # create session
+        session['user_id'] = new_id
+        session['username'] = data["name"]
+        session['role'] = role
+
         cursor.close()
-        return jsonify({"message": "User registered successfully"}), 201
+
+        return jsonify({
+            "message": "User registered successfully"
+        }), 201
 
     elif role == "worker":
         cursor.execute("SELECT * FROM workers WHERE email = %s", (email,))
@@ -135,7 +152,14 @@ def register():
             VALUES (%s, %s, %s, %s)
         """, (data["name"], email, hashed, data['contact']))
         db.commit()
+        
+        new_id = cursor.lastrowid
         cursor.close()
+        
+        session['worker_id'] = new_id
+        session['username'] = data["name"]
+        session['role'] = role
+        
         return jsonify({"message": "Worker registered successfully"}), 201
 
     cursor.close()

@@ -35,7 +35,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     alert(result.message || result.error);
 
     if (response.ok) {
-      window.location.href = '/login-page?role=user';
+      window.location.href = '/home';
     }
   } catch (error) {
     console.error('Error during registration:', error);

@@ -18,6 +18,24 @@
       <label for="password">Password:</label>
       <input type="password" id="password" placeholder="🔑Password" required />
       
+      <div class="role-toggle">
+        <input type="radio"
+              name="role"
+              id="userRole"
+              value="user"
+              checked hidden>
+        <label for="userRole" class="role-option">
+            User
+        </label>
+        <input type="radio"
+              name="role"
+              id="workerRole"
+              value="worker"
+              hidden>
+        <label for="workerRole" class="role-option">
+            Worker
+        </label>
+    </div>
 
       <button type="submit">Login</button>
 
